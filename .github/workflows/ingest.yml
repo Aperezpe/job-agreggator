@@ -1,0 +1,14 @@
+name: Ingest jobs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  run-ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ingestion endpoint
+        run: |
+          curl -sS "${{ secrets.VERCEL_INGEST_URL }}?secret=${{ secrets.CRON_SECRET }}"
