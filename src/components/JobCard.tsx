@@ -44,6 +44,7 @@ export default function JobCard({
   onApply: () => void;
   onHide: () => void;
 }) {
+  const company = Array.isArray(job.company) ? job.company[0] : job.company;
   const timestamp = formatTimestamp(job);
   const compensation = formatCompensation(job);
 
@@ -52,7 +53,7 @@ export default function JobCard({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-[var(--ink-muted)]">
-            {job.company?.name ?? 'Unknown company'}
+            {company?.name ?? 'Unknown company'}
           </p>
           <h2 className="text-xl font-semibold">{job.title}</h2>
           <p className="text-sm text-[var(--ink-muted)]">{job.location ?? 'Location not listed'}</p>
@@ -67,11 +68,11 @@ export default function JobCard({
       <div className="grid gap-2 text-sm text-[var(--ink-muted)] md:grid-cols-3">
         <div>
           <span className="block text-xs uppercase tracking-[0.2em]">Company size</span>
-          <span>{job.company?.company_size ?? 'Unknown'}</span>
+          <span>{company?.company_size ?? 'Unknown'}</span>
         </div>
         <div>
           <span className="block text-xs uppercase tracking-[0.2em]">Headquarters</span>
-          <span>{job.company?.headquarters ?? 'Unknown'}</span>
+          <span>{company?.headquarters ?? 'Unknown'}</span>
         </div>
         <div>
           <span className="block text-xs uppercase tracking-[0.2em]">Time</span>

@@ -12,11 +12,18 @@ export type JobRow = {
   posted_at: string | null;
   found_at: string | null;
   apply_url: string;
-  company: {
-    name: string;
-    company_size: string | null;
-    headquarters: string | null;
-  } | null;
+  company:
+    | {
+        name: string;
+        company_size: string | null;
+        headquarters: string | null;
+      }
+    | {
+        name: string;
+        company_size: string | null;
+        headquarters: string | null;
+      }[]
+    | null;
 };
 
 export type UserJobRow = {

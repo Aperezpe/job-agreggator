@@ -8,6 +8,7 @@ on:
 jobs:
   run-ingest:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Call ingestion endpoint
         run: |
