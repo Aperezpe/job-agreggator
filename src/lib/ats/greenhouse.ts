@@ -6,7 +6,17 @@ export async function fetchGreenhouseJobs({ atsSlug }: FetchJobsArgs): Promise<F
   if (!res.ok) {
     return { source: 'greenhouse', jobs: [] };
   }
-  const data = (await res.json()) as { jobs: Array<any> };
+  const contentType = res.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    return { source: 'greenhouse', jobs: [] };
+  }
+
+  let data: { jobs: Array<any> };
+  try {
+    data = (await res.json()) as { jobs: Array<any> };
+  } catch {
+    return { source: 'greenhouse', jobs: [] };
+  }
   const jobs: RawJob[] = (data.jobs ?? []).map((job) => ({
     id: String(job.id ?? job.absolute_url ?? job.title ?? ''),
     title: job.title ?? 'Untitled',

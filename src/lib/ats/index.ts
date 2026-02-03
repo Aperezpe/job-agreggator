@@ -1,7 +1,7 @@
 import type { FetchJobsResult } from './types';
 import { fetchGreenhouseJobs } from './greenhouse';
 import { fetchLeverJobs } from './lever';
-import { fetchMicrosoftJobs } from './microsoft';
+import { fetchAccentureJobs } from './accenture';
 
 export async function fetchJobsForCompany(atsType?: string, atsSlug?: string): Promise<FetchJobsResult> {
   if (!atsType || !atsSlug) {
@@ -13,8 +13,8 @@ export async function fetchJobsForCompany(atsType?: string, atsSlug?: string): P
   if (atsType === 'lever') {
     return fetchLeverJobs({ atsSlug });
   }
-  if (atsType === 'microsoft') {
-    return fetchMicrosoftJobs({ atsSlug });
+  if (atsType === 'accenture') {
+    return fetchAccentureJobs({ atsSlug });
   }
   return { source: atsType, jobs: [] };
 }

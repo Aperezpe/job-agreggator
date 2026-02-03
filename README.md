@@ -51,4 +51,3 @@ Required GitHub secrets:
 ## Notes
 - Only companies with `atsType` + `atsSlug` will be scanned.
 - Pay range and level are inferred from job text where possible.
-- Microsoft is supported via a custom fetcher using `atsType: "microsoft"` and `atsSlug: "microsoft.com"`.

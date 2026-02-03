@@ -17,23 +17,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const run = await supabaseAdmin
-    .from('ingest_runs')
-    .insert({ status: 'running' })
-    .select('id')
-    .single();
+  const url = new URL(request.url);
+  const storeAll = url.searchParams.get('storeAll') === '1';
+
+  const run = await supabaseAdmin.from('ingest_runs').insert({ status: 'running' }).select('id').single();
+  if (run.error) {
+    return NextResponse.json({ error: run.error.message }, { status: 500 });
+  }
 
   const runId = run.data?.id;
 
   let companiesProcessed = 0;
   let jobsFound = 0;
+  let jobsStored = 0;
 
   try {
-    const { data: companies } = await supabaseAdmin
+    const companiesRes = await supabaseAdmin
       .from('companies')
       .select('id, name, ats_type, ats_slug');
+    if (companiesRes.error) {
+      throw new Error(companiesRes.error.message);
+    }
 
-    const existingByName = new Map((companies ?? []).map((c) => [c.name.toLowerCase(), c]));
+    const existingByName = new Map((companiesRes.data ?? []).map((c) => [c.name.toLowerCase(), c]));
 
     const upserts = companySeeds.map((seed) => ({
       name: seed.name,
@@ -45,23 +51,41 @@ export async function GET(request: Request) {
     }));
 
     if (upserts.length) {
-      await supabaseAdmin.from('companies').upsert(upserts, { onConflict: 'name' });
+      const upsertRes = await supabaseAdmin.from('companies').upsert(upserts, { onConflict: 'name' });
+      if (upsertRes.error) {
+        throw new Error(upsertRes.error.message);
+      }
     }
 
-    const { data: updatedCompanies } = await supabaseAdmin
+    const updatedCompaniesRes = await supabaseAdmin
       .from('companies')
       .select('id, name, ats_type, ats_slug');
+    if (updatedCompaniesRes.error) {
+      throw new Error(updatedCompaniesRes.error.message);
+    }
 
-    for (const company of updatedCompanies ?? []) {
+    const errors: Array<{ company: string; message: string }> = [];
+
+    for (const company of updatedCompaniesRes.data ?? []) {
       if (!company.ats_type || !company.ats_slug) continue;
-      const result = await fetchJobsForCompany(company.ats_type, company.ats_slug);
+      let result;
+      try {
+        result = await fetchJobsForCompany(company.ats_type, company.ats_slug);
+      } catch (err) {
+        errors.push({
+          company: company.name,
+          message: err instanceof Error ? err.message : 'Unknown fetch error',
+        });
+        continue;
+      }
       companiesProcessed += 1;
 
       for (const job of result.jobs) {
         const normalized = normalizeJob(job, result.source);
         const eligible = isEligible(normalized);
-        if (!eligible) continue;
-        jobsFound += 1;
+        if (!eligible && !storeAll) continue;
+        if (eligible) jobsFound += 1;
+        jobsStored += 1;
 
         await supabaseAdmin
           .from('jobs')
@@ -99,8 +123,9 @@ export async function GET(request: Request) {
         .eq('id', runId);
     }
 
-    return NextResponse.json({ ok: true, companiesProcessed, jobsFound });
+    return NextResponse.json({ ok: true, companiesProcessed, jobsFound, jobsStored, errors });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     if (runId) {
       await supabaseAdmin
         .from('ingest_runs')
@@ -109,11 +134,11 @@ export async function GET(request: Request) {
           finished_at: new Date().toISOString(),
           companies_processed: companiesProcessed,
           jobs_found: jobsFound,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: message,
         })
         .eq('id', runId);
     }
 
-    return NextResponse.json({ error: 'Ingest failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Ingest failed', message }, { status: 500 });
   }
 }

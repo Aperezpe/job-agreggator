@@ -10,8 +10,6 @@ To enable scanning for a company, add:
 Examples of ATS URL patterns:
 - Greenhouse: https://boards.greenhouse.io/{slug}
 - Lever: https://jobs.lever.co/{slug}
+ - Accenture API: https://www.accenture.com/us-en/careers/jobsearch (use `atsType: "accenture"`, `atsSlug: "us-en"`)
 
 Add the slug part as `atsSlug`. Only companies with both fields set will be scanned.
-
-Custom ATS:
-- Microsoft: use `atsType: "microsoft"` and `atsSlug: "microsoft.com"` (domain). The fetcher uses Microsoft's search API.

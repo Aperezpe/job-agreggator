@@ -1,6 +1,6 @@
 export type CompanySeed = {
   name: string;
-  atsType?: 'greenhouse' | 'lever' | 'microsoft' | 'ashby' | 'workday' | 'smartrecruiters' | 'jobvite' | 'icims' | 'successfactors' | 'bamboohr' | 'taleo';
+  atsType?: 'greenhouse' | 'lever' | 'accenture';
   atsSlug?: string;
   careersUrl?: string;
   companySize?: string;
@@ -8,7 +8,7 @@ export type CompanySeed = {
 };
 
 export const companySeeds: CompanySeed[] = [
-  { name: "Accenture" },
+  { name: "Accenture", atsType: "accenture", atsSlug: "us-en", careersUrl: "https://www.accenture.com/us-en/careers/jobsearch" },
   { name: "Adobe" },
   { name: "Airbnb", atsType: "greenhouse", atsSlug: "airbnb", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=airbnb" },
   { name: "Akamai" },
@@ -118,7 +118,7 @@ export const companySeeds: CompanySeed[] = [
   { name: "Medtronic" },
   { name: "Meta" },
   { name: "Micron" },
-  { name: "Microsoft", atsType: "microsoft", atsSlug: "microsoft.com", careersUrl: "https://careers.microsoft.com/v2/global/en/home.html" },
+  { name: "Microsoft" },
   { name: "Moderna" },
   { name: "Mosaic" },
   { name: "Netflix" },

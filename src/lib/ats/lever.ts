@@ -6,7 +6,17 @@ export async function fetchLeverJobs({ atsSlug }: FetchJobsArgs): Promise<FetchJ
   if (!res.ok) {
     return { source: 'lever', jobs: [] };
   }
-  const data = (await res.json()) as Array<any>;
+  const contentType = res.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    return { source: 'lever', jobs: [] };
+  }
+
+  let data: Array<any>;
+  try {
+    data = (await res.json()) as Array<any>;
+  } catch {
+    return { source: 'lever', jobs: [] };
+  }
   const jobs: RawJob[] = data.map((job) => ({
     id: String(job.id ?? job._id ?? job.hostedUrl ?? job.text ?? ''),
     title: job.text ?? job.title ?? 'Untitled',

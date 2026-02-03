@@ -2,6 +2,39 @@ import type { RawJob } from './ats/types';
 
 const txKeywords = ['texas', 'tx', 'austin', 'dallas', 'houston', 'san antonio', 'fort worth', 'plano', 'irving', 'frisco', 'round rock'];
 const remoteKeywords = ['remote', 'work from home', 'wfh', 'telecommute', 'distributed'];
+const usKeywords = ['united states', 'usa', 'u.s.', 'us', 'us-only', 'us remote', 'remote usa', 'remote us'];
+const nonUsCountries = [
+  'canada',
+  'united kingdom',
+  'uk',
+  'korea',
+  'south korea',
+  'france',
+  'spain',
+  'israel',
+  'portugal',
+  'india',
+  'denmark',
+  'germany',
+  'australia',
+  'singapore',
+  'netherlands',
+  'switzerland',
+  'ireland',
+  'poland',
+  'brazil',
+  'mexico',
+];
+const stateAbbr = [
+  'al','ak','az','ar','ca','co','ct','de','dc','fl','ga','hi','id','il','in','ia','ks','ky','la','me','md','ma','mi','mn','ms','mo','mt',
+  'ne','nv','nh','nj','nm','ny','nc','nd','oh','ok','or','pa','ri','sc','sd','tn','tx','ut','vt','va','wa','wv','wi','wy',
+];
+const stateNames = [
+  'alabama','alaska','arizona','arkansas','california','colorado','connecticut','delaware','district','columbia','florida','georgia','hawaii',
+  'idaho','illinois','indiana','iowa','kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan','minnesota','mississippi',
+  'missouri','montana','nebraska','nevada','new','hampshire','jersey','mexico','york','carolina','dakota','ohio','oklahoma','oregon',
+  'pennsylvania','rhode','island','south','tennessee','texas','utah','vermont','virginia','washington','west','wisconsin','wyoming',
+];
 
 export type NormalizedJob = {
   title: string;
@@ -23,9 +56,23 @@ export type NormalizedJob = {
 
 export function normalizeJob(job: RawJob, source: string): NormalizedJob {
   const locationText = (job.location ?? '').toLowerCase();
-  const isRemote = remoteKeywords.some((k) => locationText.includes(k));
-  const isTx = txKeywords.some((k) => locationText.includes(k));
-  const workMode = deriveWorkMode(locationText, isRemote, isTx);
+  const descriptionText = (job.description ?? '').toLowerCase();
+  const locationHasRemote = remoteKeywords.some((k) => locationText.includes(k));
+  const locationHasTx = txKeywords.some((k) => locationText.includes(k));
+  const locationHasUs = usKeywords.some((k) => locationText.includes(k));
+  const descriptionHasUs = usKeywords.some((k) => descriptionText.includes(k));
+  const locationHasNonUs = nonUsCountries.some((k) => locationText.includes(k));
+  const descriptionHasNonUs = nonUsCountries.some((k) => descriptionText.includes(k));
+  const locationTokens = locationText.split(/[^a-z]+/).filter(Boolean);
+  const hasState = locationTokens.some((token) => stateAbbr.includes(token) || stateNames.includes(token));
+  const hasTxState = locationTokens.includes('tx') || locationTokens.includes('texas');
+  const hasNonTxState = hasState && !hasTxState;
+  const canUseDescription = locationText.trim() === '' || hasTxState || !hasNonTxState;
+  const isRemote = locationHasRemote || (canUseDescription && remoteKeywords.some((k) => descriptionText.includes(k)));
+  const isTx = locationHasTx || (canUseDescription && txKeywords.some((k) => descriptionText.includes(k)));
+  const isNonUs = (locationHasNonUs || descriptionHasNonUs) && !isTx;
+  const isUsContext = locationHasUs || descriptionHasUs || (!locationHasNonUs && !descriptionHasNonUs);
+  const workMode = deriveWorkMode(locationText, isRemote, isTx, isNonUs, isUsContext);
 
   const { min, max, currency } = extractPayRange(job.salaryText ?? job.description ?? '');
 
@@ -52,10 +99,16 @@ export function isEligible(job: NormalizedJob): boolean {
   return ['remote_us', 'remote_tx', 'onsite_tx', 'hybrid_tx'].includes(job.workMode) && isFrontendRole(job);
 }
 
-function deriveWorkMode(locationText: string, isRemote: boolean, isTx: boolean): NormalizedJob['workMode'] {
-  if (isRemote && locationText.includes('texas')) return 'remote_tx';
-  if (isRemote && locationText.includes('united states')) return 'remote_us';
-  if (isRemote && !isTx) return 'remote_us';
+function deriveWorkMode(
+  locationText: string,
+  isRemote: boolean,
+  isTx: boolean,
+  isNonUs: boolean,
+  isUsContext: boolean
+): NormalizedJob['workMode'] {
+  if (isNonUs && !isTx) return 'other';
+  if (isRemote && isTx) return 'remote_tx';
+  if (isRemote && isUsContext) return 'remote_us';
   if (isTx && locationText.includes('hybrid')) return 'hybrid_tx';
   if (isTx) return 'onsite_tx';
   return 'other';
@@ -65,7 +118,7 @@ function normalizeEmployment(type?: string, description?: string): string | unde
   const text = `${type ?? ''} ${description ?? ''}`.toLowerCase();
   if (text.includes('part-time') || text.includes('part time')) return 'part-time';
   if (text.includes('contract') || text.includes('temporary') || text.includes('temp')) return 'contract';
-  if (text.includes('intern')) return 'intern';
+  if (/(^|\\b)intern(s|ship)?\\b/.test(text)) return 'intern';
   if (text.includes('full-time') || text.includes('full time')) return 'full-time';
   return type;
 }
@@ -84,7 +137,7 @@ function inferLevel(text: string): string | undefined {
 }
 
 function isFrontendRole(job: NormalizedJob): boolean {
-  const text = `${job.title} ${job.raw.description ?? ''}`.toLowerCase();
+  const titleText = job.title.toLowerCase();
   const keywords = [
     'front end',
     'frontend',
@@ -95,11 +148,12 @@ function isFrontendRole(job: NormalizedJob): boolean {
     'react',
     'angular',
     'vue',
-    'javascript',
-    'typescript',
     'design systems',
+    'client',
+    'browser',
   ];
-  return keywords.some((keyword) => text.includes(keyword));
+  if (keywords.some((keyword) => titleText.includes(keyword))) return true;
+  return false;
 }
 
 function extractPayRange(text: string): { min?: number; max?: number; currency?: string } {
