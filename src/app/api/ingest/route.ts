@@ -115,8 +115,7 @@ export async function GET(request: Request) {
           .maybeSingle();
 
         if (existingRes.data) {
-          const updatePayload = { ...insertPayload };
-          delete updatePayload.found_at;
+          const { found_at: _foundAt, ...updatePayload } = insertPayload;
 
           await supabaseAdmin
             .from('jobs')
