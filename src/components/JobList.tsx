@@ -6,6 +6,7 @@ import type { JobRow, UserJobRow } from '@/lib/types';
 import JobCard from './JobCard';
 
 const defaultModes = ['remote_us', 'remote_tx', 'onsite_tx', 'hybrid_tx'];
+const PAGE_SIZE = 15;
 
 export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
   const [jobs, setJobs] = useState<JobRow[]>(initialJobs);
@@ -13,6 +14,7 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
   const [selectedModes, setSelectedModes] = useState<string[]>(defaultModes);
   const [userJobs, setUserJobs] = useState<UserJobRow[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     supabaseBrowser.auth.getSession().then(({ data }) => {
@@ -59,6 +61,14 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
       });
   }, [jobs, query, selectedModes, statusByJobId]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [query, selectedModes, statusByJobId, jobs]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pageJobs = visibleJobs.slice(pageStart, pageStart + PAGE_SIZE);
+
   const toggleMode = (mode: string) => {
     setSelectedModes((prev) =>
       prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode]
@@ -72,11 +82,25 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
     }
 
     const existing = userJobs.find((row) => row.job_id === jobId);
+    if (existing && existing.status === status && status === 'applied') {
+      const { error } = await supabaseBrowser
+        .from('user_jobs')
+        .delete()
+        .eq('id', existing.id)
+        .eq('user_id', userId);
+
+      if (!error) {
+        setUserJobs((prev) => prev.filter((row) => row.id !== existing.id));
+      }
+      return;
+    }
+
     if (existing) {
       const { data } = await supabaseBrowser
         .from('user_jobs')
         .update({ status })
         .eq('id', existing.id)
+        .eq('user_id', userId)
         .select('id, job_id, status')
         .single();
 
@@ -88,7 +112,7 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
 
     const { data } = await supabaseBrowser
       .from('user_jobs')
-      .insert({ job_id: jobId, status })
+      .insert({ job_id: jobId, status, user_id: userId })
       .select('id, job_id, status')
       .single();
 
@@ -99,39 +123,39 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
 
   return (
     <section className="mt-10">
-      <div className="card p-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <label className="text-xs uppercase tracking-[0.2em] text-[var(--ink-muted)]">
-            Role search
-          </label>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="w-72 max-w-full rounded-xl border border-black/10 px-4 py-2"
-            placeholder="Search frontend, UI, React..."
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {defaultModes.map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => toggleMode(mode)}
-              className={`tag ${selectedModes.includes(mode) ? 'bg-[var(--accent-2)] text-white' : ''}`}
-            >
-              {mode.replace('_', ' ')}
-            </button>
-          ))}
+      <div className="content-card">
+        <div className="search-section">
+          <div className="search-wrapper">
+            <label className="search-label">Role Search</label>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="search-input"
+              placeholder="Search frontend, UI, React..."
+            />
+          </div>
+          <div className="location-filters">
+            {defaultModes.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => toggleMode(mode)}
+                className={`location-btn${selectedModes.includes(mode) ? ' active' : ''}`}
+              >
+                {mode.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6">
-        {visibleJobs.length === 0 ? (
+      <div className="mt-10 grid gap-8">
+        {pageJobs.length === 0 ? (
           <div className="card p-8 text-center text-[var(--ink-muted)]">
             No matching jobs yet. The next scan runs soon.
           </div>
         ) : (
-          visibleJobs.map((job) => (
+          pageJobs.map((job) => (
             <JobCard
               key={job.id}
               job={job}
@@ -142,6 +166,35 @@ export default function JobList({ initialJobs }: { initialJobs: JobRow[] }) {
           ))
         )}
       </div>
+
+      {visibleJobs.length > PAGE_SIZE && (
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-[var(--ink-muted)]">
+            Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, visibleJobs.length)} of {visibleJobs.length}
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </button>
+            <span className="text-sm text-[var(--ink-muted)]">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

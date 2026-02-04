@@ -1,6 +1,22 @@
 export type CompanySeed = {
   name: string;
-  atsType?: 'greenhouse' | 'lever' | 'accenture';
+  atsType?:
+    | "greenhouse"
+    | "lever"
+    | "accenture"
+    | "phenom"
+    | "oraclecloud"
+    | "jobsyn"
+    | "eightfold"
+    | "successfactors"
+    | "radancy"
+    | "apple"
+    | "pcsx"
+    | "smartrecruiters"
+    | "atlassian"
+    | "workday"
+    | "baidu"
+    | "bofa";
   atsSlug?: string;
   careersUrl?: string;
   companySize?: string;
@@ -8,26 +24,117 @@ export type CompanySeed = {
 };
 
 export const companySeeds: CompanySeed[] = [
-  { name: "Accenture", atsType: "accenture", atsSlug: "us-en", careersUrl: "https://www.accenture.com/us-en/careers/jobsearch" },
-  { name: "Adobe" },
-  { name: "Airbnb", atsType: "greenhouse", atsSlug: "airbnb", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=airbnb" },
-  { name: "Akamai" },
-  { name: "Alaska Airlines" },
-  { name: "Alphabet" },
-  { name: "Amazon" },
-  { name: "American Express" },
-  { name: "American Airlines" },
-  { name: "Amgen" },
-  { name: "Ansys" },
-  { name: "Apple" },
-  { name: "Applied Materials" },
-  { name: "Arista Networks" },
-  { name: "Atlassian" },
-  { name: "Autodesk" },
-  { name: "Automattic", atsType: "greenhouse", atsSlug: "automatticjobs", careersUrl: "https://job-boards.greenhouse.io/automatticjobs" },
-  { name: "Baidu" },
-  { name: "Baker Hughes" },
-  { name: "Bank of America" },
+  {
+    name: "Accenture",
+    atsType: "accenture",
+    atsSlug: "us-en",
+    careersUrl: "https://www.accenture.com/us-en/careers/jobsearch",
+  },
+  {
+    name: "Adobe",
+    atsType: "phenom",
+    atsSlug: "ADOBUS",
+    careersUrl: "https://careers.adobe.com/us/en/search-results",
+  },
+  {
+    name: "Airbnb",
+    atsType: "greenhouse",
+    atsSlug: "airbnb",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=airbnb",
+  },
+  {
+    name: "Akamai",
+    atsType: "oraclecloud",
+    atsSlug:
+      "fa-extu-saasfaprod1.fa.ocs.oraclecloud.com|CX_1|https://jobs.akamai.com",
+    careersUrl: "https://jobs.akamai.com/en/sites/CX_1",
+  },
+  {
+    name: "Alaska Airlines",
+    atsType: "jobsyn",
+    atsSlug: "careers.alaskaair.com",
+    careersUrl: "https://careers.alaskaair.com/jobs/",
+  },
+  {
+    name: "American Express",
+    atsType: "eightfold",
+    atsSlug: "aexp.eightfold.ai|38266033|aexp.com",
+    careersUrl: "https://aexp.eightfold.ai/careers",
+  },
+  {
+    name: "American Airlines",
+    atsType: "successfactors",
+    atsSlug: "jobs.aa.com",
+    careersUrl: "https://jobs.aa.com/search/",
+  },
+  {
+    name: "Amgen",
+    atsType: "radancy",
+    atsSlug: "careers.amgen.com|/en/search-jobs",
+    careersUrl: "https://careers.amgen.com/en/search-jobs",
+  },
+  {
+    name: "Ansys",
+    atsType: "radancy",
+    atsSlug: "careers.synopsys.com|/search-jobs/ansys/44408/1",
+    careersUrl: "https://careers.synopsys.com/search-jobs/ansys/44408/1",
+  },
+  {
+    name: "Apple",
+    atsType: "apple",
+    atsSlug: "en-us|united-states-USA|25",
+    careersUrl:
+      "https://jobs.apple.com/en-us/search?location=united-states-USA",
+  },
+  {
+    name: "Applied Materials",
+    atsType: "pcsx",
+    atsSlug: "careers.appliedmaterials.com|appliedmaterials.com|20",
+    careersUrl:
+      "https://careers.appliedmaterials.com/careers?domain=appliedmaterials.com",
+  },
+  {
+    name: "Arista Networks",
+    atsType: "smartrecruiters",
+    atsSlug: "AristaNetworks|100|20",
+    careersUrl: "https://jobs.smartrecruiters.com/AristaNetworks",
+  },
+  {
+    name: "Atlassian",
+    atsType: "atlassian",
+    atsSlug: "https://www.atlassian.com/endpoint/careers/listings",
+    careersUrl: "https://www.atlassian.com/company/careers/all-jobs",
+  },
+  {
+    name: "Autodesk",
+    atsType: "workday",
+    atsSlug: "autodesk.wd1.myworkdayjobs.com|autodesk|Ext|20|10",
+    careersUrl: "https://autodesk.wd1.myworkdayjobs.com/Ext",
+  },
+  {
+    name: "Automattic",
+    atsType: "greenhouse",
+    atsSlug: "automatticjobs",
+    careersUrl: "https://job-boards.greenhouse.io/automatticjobs",
+  },
+  {
+    name: "Baidu",
+    atsType: "baidu",
+    atsSlug: "SOCIAL|20|10",
+    careersUrl: "https://talent.baidu.com/",
+  },
+  {
+    name: "Baker Hughes",
+    atsType: "workday",
+    atsSlug: "bakerhughes.wd5.myworkdayjobs.com|bakerhughes|BakerHughes|20|10",
+    careersUrl: "https://bakerhughes.wd5.myworkdayjobs.com/BakerHughes",
+  },
+  {
+    name: "Bank of America",
+    atsType: "bofa",
+    atsSlug: "https://careers.bankofamerica.com|50|30",
+    careersUrl: "https://careers.bankofamerica.com/en-us/job-search",
+  },
   { name: "Berkshire Hathaway" },
   { name: "Best Buy" },
   { name: "BlackRock" },
@@ -43,21 +150,46 @@ export const companySeeds: CompanySeed[] = [
   { name: "Centene" },
   { name: "Cerner" },
   { name: "Charles Schwab" },
-  { name: "Chewy", atsType: "greenhouse", atsSlug: "chewycom", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=chewycom" },
+  {
+    name: "Chewy",
+    atsType: "greenhouse",
+    atsSlug: "chewycom",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=chewycom",
+  },
   { name: "Chick-fil-A" },
   { name: "Cisco" },
   { name: "Citi" },
-  { name: "Cloudflare", atsType: "greenhouse", atsSlug: "cloudflare", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=cloudflare" },
+  {
+    name: "Cloudflare",
+    atsType: "greenhouse",
+    atsSlug: "cloudflare",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=cloudflare",
+  },
   { name: "Coca-Cola" },
   { name: "Cognizant" },
-  { name: "Coinbase", atsType: "greenhouse", atsSlug: "coinbase", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=Coinbase" },
+  {
+    name: "Coinbase",
+    atsType: "greenhouse",
+    atsSlug: "coinbase",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=Coinbase",
+  },
   { name: "Comcast" },
   { name: "ConocoPhillips" },
   { name: "Costco" },
   { name: "CrowdStrike" },
   { name: "Cummins" },
-  { name: "Databricks", atsType: "greenhouse", atsSlug: "databricks", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=databricks" },
-  { name: "Datadog", atsType: "greenhouse", atsSlug: "datadog", careersUrl: "https://boards.greenhouse.io/embed/job_board?for=datadog" },
+  {
+    name: "Databricks",
+    atsType: "greenhouse",
+    atsSlug: "databricks",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=databricks",
+  },
+  {
+    name: "Datadog",
+    atsType: "greenhouse",
+    atsSlug: "datadog",
+    careersUrl: "https://boards.greenhouse.io/embed/job_board?for=datadog",
+  },
   { name: "Dell" },
   { name: "Deloitte" },
   { name: "Delta Air Lines" },

@@ -21,22 +21,20 @@ export default async function Home() {
   return (
     <div className="container">
       <TopNav />
-      <section className="mt-10 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
-        <div className="card p-6">
-          <h2 className="text-2xl font-semibold">What this scan includes</h2>
-          <p className="mt-3 text-sm text-[var(--ink-muted)]">
-            The scanner checks company job boards every 6 hours. Roles are filtered for Remote (US),
-            Remote (Texas), Texas Onsite, or Texas Hybrid. If the posting date is missing, we show
-            the discovery time instead.
-          </p>
-        </div>
-        <div className="card p-6">
-          <h2 className="text-2xl font-semibold">Quick filters</h2>
-          <ul className="mt-3 text-sm text-[var(--ink-muted)] space-y-2">
-            <li>Frontend, UI, React, Web, Design Systems</li>
-            <li>Mid, Senior, Staff, Lead</li>
-            <li>Full-time, contract, or part-time</li>
-          </ul>
+      <section className="content-card">
+        <h2 className="section-title">What this scan includes</h2>
+        <p className="description">
+          The scanner checks company job boards every 6 hours. Roles are filtered for Remote (US),
+          Remote (Texas), Texas Onsite, or Texas Hybrid. If the posting date is missing, we show
+          the discovery time instead.
+        </p>
+        <div className="filters-section">
+          <h3 className="filters-title">Quick filters</h3>
+          <div className="filter-chips">
+            <span className="filter-chip">Frontend, UI, React, Web, Design Systems</span>
+            <span className="filter-chip">Mid, Senior, Staff, Lead</span>
+            <span className="filter-chip">Full-time, contract, or part-time</span>
+          </div>
         </div>
       </section>
       <JobList initialJobs={jobs} />

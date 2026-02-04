@@ -54,9 +54,38 @@ export type NormalizedJob = {
   raw: RawJob;
 };
 
+function coerceString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    const parts = value.map(coerceString).filter(Boolean) as string[];
+    return parts.length ? parts.join(' | ') : undefined;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const candidates = [
+      obj.fullLocation,
+      obj.location,
+      obj.name,
+      obj.city,
+      obj.region,
+      obj.country,
+      obj.text,
+      obj.label,
+    ];
+    const found = candidates.map(coerceString).find((entry) => entry && entry.trim() !== '');
+    if (found) return found;
+    const parts = [obj.city, obj.region, obj.country].map(coerceString).filter(Boolean) as string[];
+    if (parts.length) return parts.join(', ');
+  }
+  return undefined;
+}
+
 export function normalizeJob(job: RawJob, source: string): NormalizedJob {
-  const locationText = (job.location ?? '').toLowerCase();
-  const descriptionText = (job.description ?? '').toLowerCase();
+  const locationValue = coerceString(job.location);
+  const descriptionValue = coerceString(job.description);
+  const locationText = (locationValue ?? '').toLowerCase();
+  const descriptionText = (descriptionValue ?? '').toLowerCase();
   const locationHasRemote = remoteKeywords.some((k) => locationText.includes(k));
   const locationHasTx = txKeywords.some((k) => locationText.includes(k));
   const locationHasUs = usKeywords.some((k) => locationText.includes(k));
@@ -74,18 +103,18 @@ export function normalizeJob(job: RawJob, source: string): NormalizedJob {
   const isUsContext = locationHasUs || descriptionHasUs || (!locationHasNonUs && !descriptionHasNonUs);
   const workMode = deriveWorkMode(locationText, isRemote, isTx, isNonUs, isUsContext);
 
-  const { min, max, currency } = extractPayRange(job.salaryText ?? job.description ?? '');
+  const { min, max, currency } = extractPayRange(job.salaryText ?? descriptionValue ?? '');
 
   return {
     title: job.title,
-    location: job.location,
+    location: locationValue,
     workMode,
-    employmentType: normalizeEmployment(job.employmentType, job.description ?? ''),
-    level: inferLevel(`${job.title} ${job.description ?? ''}`),
+    employmentType: normalizeEmployment(job.employmentType, descriptionValue ?? ''),
+    level: inferLevel(`${job.title} ${descriptionValue ?? ''}`),
     payMin: min,
     payMax: max,
     payCurrency: currency,
-    descriptionSnippet: trimText(job.description ?? '', 220),
+    descriptionSnippet: trimText(descriptionValue ?? '', 220),
     postedAt: job.postedAt,
     foundAt: new Date().toISOString(),
     applyUrl: job.applyUrl,

@@ -5,7 +5,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import type { JobRow, UserJobRow } from '@/lib/types';
 import JobCard from './JobCard';
 
-export default function AppliedList() {
+export default function HiddenList() {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [userJobs, setUserJobs] = useState<UserJobRow[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -44,9 +44,9 @@ export default function AppliedList() {
     });
   }, [userId]);
 
-  const appliedJobs = useMemo(() => {
-    const appliedIds = new Set(userJobs.filter((row) => row.status === 'applied').map((row) => row.job_id));
-    return jobs.filter((job) => appliedIds.has(job.id));
+  const hiddenJobs = useMemo(() => {
+    const hiddenIds = new Set(userJobs.filter((row) => row.status === 'hidden').map((row) => row.job_id));
+    return jobs.filter((job) => hiddenIds.has(job.id));
   }, [jobs, userJobs]);
 
   const markStatus = async (jobId: string, status: UserJobRow['status']) => {
@@ -56,19 +56,6 @@ export default function AppliedList() {
     }
 
     const existing = userJobs.find((row) => row.job_id === jobId);
-    if (existing && existing.status === status && status === 'applied') {
-      const { error } = await supabaseBrowser
-        .from('user_jobs')
-        .delete()
-        .eq('id', existing.id)
-        .eq('user_id', userId);
-
-      if (!error) {
-        setUserJobs((prev) => prev.filter((row) => row.id !== existing.id));
-      }
-      return;
-    }
-
     if (existing) {
       const { data } = await supabaseBrowser
         .from('user_jobs')
@@ -95,26 +82,47 @@ export default function AppliedList() {
     }
   };
 
+  const clearStatus = async (jobId: string) => {
+    if (!userId) {
+      alert('Please sign in to track jobs.');
+      return;
+    }
+
+    const existing = userJobs.find((row) => row.job_id === jobId);
+    if (!existing) return;
+
+    const { error } = await supabaseBrowser
+      .from('user_jobs')
+      .delete()
+      .eq('id', existing.id)
+      .eq('user_id', userId);
+
+    if (!error) {
+      setUserJobs((prev) => prev.filter((row) => row.id !== existing.id));
+    }
+  };
+
   if (!userId) {
     return (
       <div className="card p-8 text-center text-[var(--ink-muted)]">
-        Sign in to see your applied list.
+        Sign in to see your hidden jobs.
       </div>
     );
   }
 
   return (
     <div className="grid gap-8">
-      {appliedJobs.length === 0 ? (
-        <div className="card p-8 text-center text-[var(--ink-muted)]">No applied jobs yet.</div>
+      {hiddenJobs.length === 0 ? (
+        <div className="card p-8 text-center text-[var(--ink-muted)]">No hidden jobs.</div>
       ) : (
-        appliedJobs.map((job) => (
+        hiddenJobs.map((job) => (
           <JobCard
             key={job.id}
             job={job}
-            userStatus="applied"
+            userStatus="hidden"
+            hideLabel="Show"
             onApply={() => markStatus(job.id, 'applied')}
-            onHide={() => markStatus(job.id, 'hidden')}
+            onHide={() => clearStatus(job.id)}
           />
         ))
       )}
