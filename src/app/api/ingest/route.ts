@@ -87,27 +87,41 @@ export async function GET(request: Request) {
         if (eligible) jobsFound += 1;
         jobsStored += 1;
 
-        await supabaseAdmin
+        const insertPayload = {
+          company_id: company.id,
+          title: normalized.title,
+          location: normalized.location ?? null,
+          work_mode: normalized.workMode,
+          employment_type: normalized.employmentType ?? null,
+          level: normalized.level ?? null,
+          pay_min: normalized.payMin ?? null,
+          pay_max: normalized.payMax ?? null,
+          pay_currency: normalized.payCurrency ?? null,
+          description_snippet: normalized.descriptionSnippet ?? null,
+          posted_at: normalized.postedAt ?? null,
+          found_at: normalized.foundAt,
+          apply_url: normalized.applyUrl,
+          source: normalized.source,
+          source_id: normalized.sourceId,
+          eligible,
+          raw: normalized.raw,
+        };
+
+        const insertRes = await supabaseAdmin
           .from('jobs')
-          .upsert({
-            company_id: company.id,
-            title: normalized.title,
-            location: normalized.location ?? null,
-            work_mode: normalized.workMode,
-            employment_type: normalized.employmentType ?? null,
-            level: normalized.level ?? null,
-            pay_min: normalized.payMin ?? null,
-            pay_max: normalized.payMax ?? null,
-            pay_currency: normalized.payCurrency ?? null,
-            description_snippet: normalized.descriptionSnippet ?? null,
-            posted_at: normalized.postedAt ?? null,
-            found_at: normalized.foundAt,
-            apply_url: normalized.applyUrl,
-            source: normalized.source,
-            source_id: normalized.sourceId,
-            eligible,
-            raw: normalized.raw,
-          }, { onConflict: 'source,source_id' });
+          .insert(insertPayload, { onConflict: 'source,source_id', ignoreDuplicates: true })
+          .select('id');
+
+        if (!insertRes.data || insertRes.data.length === 0) {
+          const updatePayload = { ...insertPayload };
+          delete updatePayload.found_at;
+
+          await supabaseAdmin
+            .from('jobs')
+            .update(updatePayload)
+            .eq('source', normalized.source)
+            .eq('source_id', normalized.sourceId);
+        }
       }
     }
 

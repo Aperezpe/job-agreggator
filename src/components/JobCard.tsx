@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import type { JobRow, UserJobRow } from '@/lib/types';
 
 const workModeLabels: Record<string, string> = {
@@ -25,18 +26,14 @@ function formatCompensation(job: JobRow) {
   return `${job.pay_min.toLocaleString()}-${job.pay_max.toLocaleString()} ${currency}`;
 }
 
-function formatTimestamp(job: JobRow) {
-  const posted = job.posted_at ? new Date(job.posted_at) : null;
-  const found = job.found_at ? new Date(job.found_at) : null;
-  if (posted) return { label: 'Posted', value: posted.toLocaleString() };
-  if (found) return { label: 'Found', value: found.toLocaleString() };
-  return null;
+function parseDate(value: string | null): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatRelativeTime(iso: string | null): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
+function formatRelativeTime(date: Date | null): string | null {
+  if (!date) return null;
   const diffMs = Date.now() - date.getTime();
   const diffSeconds = Math.max(0, Math.floor(diffMs / 1000));
   if (diffSeconds < 60) return 'Just now';
@@ -81,73 +78,75 @@ export default function JobCard({
   onApply: () => void;
   onHide: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const company = Array.isArray(job.company) ? job.company[0] : job.company;
-  const timestamp = formatTimestamp(job);
-  const relativeTime =
-    formatRelativeTime(job.posted_at) ??
-    formatRelativeTime(job.found_at);
+  const referenceDate = useMemo(() => parseDate(job.posted_at) ?? parseDate(job.found_at), [job.posted_at, job.found_at]);
+  const relativeTime = formatRelativeTime(referenceDate);
+  const isNew = referenceDate ? Date.now() - referenceDate.getTime() < 1000 * 60 * 60 * 24 : false;
   const compensation = formatCompensation(job);
   const applyUrl = normalizeApplyUrl(job.apply_url);
 
   const isApplied = userStatus === 'applied';
+  const canToggleDescription = Boolean(job.description_snippet && job.description_snippet.length > 160);
 
   return (
-    <article className={`card job-card p-10 md:p-11 flex flex-col gap-6 fade-in${isApplied ? ' card-applied' : ''}`}>
-      <div className="flex flex-wrap items-start justify-between gap-6">
+    <article className={`card job-card fade-in${isApplied ? ' applied' : ''}`}>
+      {isNew && <span className="status-badge new">New</span>}
+      <div className="card-header">
         <div>
-          <p className="text-xs uppercase tracking-[0.32em] text-[var(--ink-muted)]">
-            {company?.name ?? 'Unknown company'}
-          </p>
-          <h2 className="mt-3 text-xl md:text-2xl font-semibold">{job.title}</h2>
-          <p className="mt-2 text-sm text-[var(--ink-muted)]">{formatLocation(job.location)}</p>
+          <div className="company-name">{company?.name ?? 'Unknown company'}</div>
+          <h2 className="job-title">{job.title}</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="tag">{workModeLabels[job.work_mode ?? ''] ?? 'Other'}</span>
-          {job.level && <span className="tag">{levelLabels[job.level] ?? job.level}</span>}
-          {job.employment_type && <span className="tag">{job.employment_type}</span>}
-          {isApplied && <span className="tag tag-applied">Applied</span>}
+        <div className="tags-container">
+          <span className="tag tag-location">{workModeLabels[job.work_mode ?? ''] ?? 'Other'}</span>
+          {job.level && <span className="tag tag-level">{levelLabels[job.level] ?? job.level}</span>}
+          {job.employment_type && <span className="tag tag-level">{job.employment_type}</span>}
+          {isApplied && <span className="tag tag-applied">✓ Applied</span>}
         </div>
       </div>
 
-      {(company?.company_size || company?.headquarters || relativeTime) && (
-        <div className="grid gap-4 text-sm text-[var(--ink-muted)] md:grid-cols-3">
-          {company?.company_size && (
-            <div>
-              <span className="block text-[11px] uppercase tracking-[0.22em]">Company size</span>
-              <span className="mt-2 block">{company.company_size}</span>
-            </div>
-          )}
-          {company?.headquarters && (
-            <div>
-              <span className="block text-[11px] uppercase tracking-[0.22em]">Headquarters</span>
-              <span className="mt-2 block">{company.headquarters}</span>
-            </div>
-          )}
-          {relativeTime && (
-            <div>
-              <span className="block text-[11px] uppercase tracking-[0.22em]">Updated</span>
-              <span className="mt-2 block">{relativeTime}</span>
-            </div>
-          )}
+      <div className="locations-list">{formatLocation(job.location)}</div>
+
+      {relativeTime && (
+        <div className="meta-info">
+          <span className="meta-label">Updated</span>
+          <span className="meta-value">{relativeTime}</span>
         </div>
       )}
 
       {job.description_snippet && (
-        <p className="text-sm leading-relaxed text-[var(--ink-muted)]">{job.description_snippet}</p>
+        <>
+          <p className={`job-description${canToggleDescription && !expanded ? ' collapsed' : ''}`}>
+            {job.description_snippet}
+          </p>
+          {canToggleDescription && (
+            <button
+              type="button"
+              className="expand-toggle"
+              onClick={() => setExpanded((prev) => !prev)}
+            >
+              {expanded ? 'Read less' : 'Read more'}
+            </button>
+          )}
+        </>
       )}
 
       {compensation && (
-        <p className="text-sm text-[var(--ink-muted)]">Pay range: {compensation}</p>
+        <p className="job-description">Pay range: {compensation}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-4 pt-2">
-        <a className="primary-button" href={applyUrl} target="_blank" rel="noreferrer">
+      <div className="action-buttons">
+        <a className="btn btn-apply" href={applyUrl} target="_blank" rel="noreferrer">
           Apply
         </a>
-        <button className="secondary-button" onClick={onApply} type="button">
+        <button
+          className={`btn ${userStatus === 'applied' ? 'btn-applied' : 'btn-secondary'}`}
+          onClick={onApply}
+          type="button"
+        >
           {userStatus === 'applied' ? 'Applied' : 'Mark Applied'}
         </button>
-        <button className="secondary-button" onClick={onHide} type="button">
+        <button className="btn btn-hide" onClick={onHide} type="button">
           {hideLabel}
         </button>
       </div>
