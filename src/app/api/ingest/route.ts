@@ -107,20 +107,25 @@ export async function GET(request: Request) {
           raw: normalized.raw,
         };
 
-        const insertRes = await supabaseAdmin
+        const existingRes = await supabaseAdmin
           .from('jobs')
-          .insert(insertPayload, { onConflict: 'source,source_id', ignoreDuplicates: true })
-          .select('id');
+          .select('id')
+          .eq('source', normalized.source)
+          .eq('source_id', normalized.sourceId)
+          .maybeSingle();
 
-        if (!insertRes.data || insertRes.data.length === 0) {
+        if (existingRes.data) {
           const updatePayload = { ...insertPayload };
           delete updatePayload.found_at;
 
           await supabaseAdmin
             .from('jobs')
             .update(updatePayload)
-            .eq('source', normalized.source)
-            .eq('source_id', normalized.sourceId);
+            .eq('id', existingRes.data.id);
+        } else {
+          await supabaseAdmin
+            .from('jobs')
+            .insert(insertPayload);
         }
       }
     }
